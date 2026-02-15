@@ -1,0 +1,24 @@
+{
+  "name": "mailo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bash scripts/build.sh",
+    "setup-db": "bun run scripts/setup-db.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "elysia": "^1.2.25",
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/static": "^1.2.0",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "typescript": "^5.7.0",
+    "@types/bun": "^1.2.0"
+  }
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Mailo Webmail Server
+After=network.target
+
+[Service]
+Type=simple
+User=eunhhu
+Group=eunhhu
+WorkingDirectory=/opt/webmail
+ExecStart=/opt/webmail/mailo-server
+EnvironmentFile=/opt/webmail/.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
