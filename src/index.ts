@@ -1,5 +1,5 @@
+import { join } from "node:path";
 import { cors } from "@elysiajs/cors";
-import staticPlugin from "@elysiajs/static";
 import { Elysia } from "elysia";
 import { config } from "./config";
 import { sql } from "./db/client";
@@ -8,6 +8,8 @@ import { authRoutes } from "./routes/auth";
 import { messageRoutes } from "./routes/messages";
 
 await initializeDatabase(sql);
+
+const DIST_DIR = join(process.cwd(), "frontend", "dist");
 
 const app = new Elysia()
 	.use(
@@ -18,12 +20,10 @@ const app = new Elysia()
 	)
 	.use(authRoutes)
 	.use(messageRoutes)
-	.use(
-		staticPlugin({
-			assets: "frontend/dist",
-			prefix: "/",
-		}),
-	)
+	.get("/assets/*", ({ params }) => {
+		return Bun.file(join(DIST_DIR, "assets", params["*"]));
+	})
+	.get("/*", () => Bun.file(join(DIST_DIR, "index.html")))
 	.onError(({ error, set }) => {
 		const message = "message" in error ? error.message : String(error);
 		if (
@@ -38,7 +38,6 @@ const app = new Elysia()
 		set.status = 500;
 		return { error: "Internal server error" };
 	})
-	.get("/*", () => Bun.file("frontend/dist/index.html"))
 	.listen({
 		port: config.port,
 		hostname: config.host,

@@ -13,7 +13,6 @@
   "dependencies": {
     "elysia": "^1.2.25",
     "@elysiajs/cors": "^1.2.0",
-    "@elysiajs/static": "^1.2.0",
     "postgres": "^3.4.5"
   },
   "devDependencies": {
