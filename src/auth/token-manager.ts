@@ -1,5 +1,31 @@
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
 import { sql } from "../db/client";
+import { config } from "../config";
 import { refreshAccessToken } from "./google-oauth";
+
+function deriveKey(secret: string): Buffer {
+	return createHash("sha256").update(secret).digest();
+}
+
+function encrypt(text: string, secret: string): string {
+	const key = deriveKey(secret);
+	const iv = randomBytes(12);
+	const cipher = createCipheriv("aes-256-gcm", key, iv);
+	const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+	const tag = cipher.getAuthTag();
+	return Buffer.concat([iv, tag, encrypted]).toString("base64");
+}
+
+function decrypt(data: string, secret: string): string {
+	const key = deriveKey(secret);
+	const buf = Buffer.from(data, "base64");
+	const iv = buf.subarray(0, 12);
+	const tag = buf.subarray(12, 28);
+	const encrypted = buf.subarray(28);
+	const decipher = createDecipheriv("aes-256-gcm", key, iv);
+	decipher.setAuthTag(tag);
+	return decipher.update(encrypted, undefined, "utf8") + decipher.final("utf8");
+}
 
 interface StoredTokens {
 	access_token: string;
@@ -12,13 +38,16 @@ export async function saveTokens(
 	tokens: { access_token: string; refresh_token?: string; expires_in: number },
 ): Promise<void> {
 	const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+	const secret = config.sessionSecret;
+	const encAccessToken = encrypt(tokens.access_token, secret);
+	const encRefreshToken = tokens.refresh_token ? encrypt(tokens.refresh_token, secret) : null;
 
 	await sql`
 		INSERT INTO oauth_tokens (user_email, access_token, refresh_token, expires_at, updated_at)
-		VALUES (${email}, ${tokens.access_token}, ${tokens.refresh_token ?? null}, ${expiresAt}, NOW())
+		VALUES (${email}, ${encAccessToken}, ${encRefreshToken}, ${expiresAt}, NOW())
 		ON CONFLICT (user_email) DO UPDATE SET
-			access_token = ${tokens.access_token},
-			refresh_token = COALESCE(${tokens.refresh_token ?? null}, oauth_tokens.refresh_token),
+			access_token = ${encAccessToken},
+			refresh_token = COALESCE(${encRefreshToken}, oauth_tokens.refresh_token),
 			expires_at = ${expiresAt},
 			updated_at = NOW()
 	`;
@@ -33,11 +62,18 @@ export async function getTokens(email: string): Promise<StoredTokens | null> {
 
 	if (rows.length === 0) return null;
 
-	return {
-		access_token: rows[0].access_token,
-		refresh_token: rows[0].refresh_token,
-		expires_at: new Date(rows[0].expires_at),
-	};
+	const secret = config.sessionSecret;
+	try {
+		return {
+			access_token: decrypt(rows[0].access_token, secret),
+			refresh_token: rows[0].refresh_token ? decrypt(rows[0].refresh_token, secret) : null,
+			expires_at: new Date(rows[0].expires_at),
+		};
+	} catch {
+		// 토큰 복호화 실패 - SESSION_SECRET 변경 등으로 기존 토큰이 무효화됨
+		await sql`DELETE FROM oauth_tokens WHERE user_email = ${email}`;
+		return null;
+	}
 }
 
 export async function getValidAccessToken(email: string): Promise<string | null> {

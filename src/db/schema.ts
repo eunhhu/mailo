@@ -1,6 +1,8 @@
 import type { Sql } from "postgres";
 
 export async function initializeDatabase(sql: Sql) {
+	await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+
 	await sql`
 		CREATE TABLE IF NOT EXISTS oauth_tokens (
 			id SERIAL PRIMARY KEY,

@@ -7,8 +7,15 @@ function getHeader(headers: { name: string; value: string }[], name: string): st
 }
 
 function decodeBase64Url(data: string): string {
-	const base64 = data.replace(/-/g, "+").replace(/_/g, "/");
-	return atob(base64);
+	let base64 = data.replace(/-/g, "+").replace(/_/g, "/");
+	const pad = base64.length % 4;
+	if (pad) base64 += "=".repeat(4 - pad);
+	const binaryStr = atob(base64);
+	const bytes = new Uint8Array(binaryStr.length);
+	for (let i = 0; i < binaryStr.length; i++) {
+		bytes[i] = binaryStr.charCodeAt(i);
+	}
+	return new TextDecoder("utf-8").decode(bytes);
 }
 
 function extractBody(payload: GmailMessage["payload"]): {
@@ -50,6 +57,7 @@ export interface MessageSummary {
 	threadId: string;
 	snippet: string;
 	from: string;
+	to: string;
 	subject: string;
 	date: string;
 	labelIds: string[];
@@ -94,7 +102,7 @@ export async function listMessages(
 	const messages = await Promise.all(
 		list.messages.map(async (msg) => {
 			const res = await fetch(
-				`${GMAIL_API}/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+				`${GMAIL_API}/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
 				{ headers: { Authorization: `Bearer ${accessToken}` } },
 			);
 
@@ -108,6 +116,7 @@ export async function listMessages(
 				threadId: detail.threadId,
 				snippet: detail.snippet,
 				from: getHeader(headers, "From"),
+				to: getHeader(headers, "To"),
 				subject: getHeader(headers, "Subject"),
 				date: getHeader(headers, "Date"),
 				labelIds: detail.labelIds ?? [],
@@ -144,8 +153,66 @@ export async function getMessage(accessToken: string, messageId: string): Promis
 	};
 }
 
+export async function modifyMessage(
+	accessToken: string,
+	messageId: string,
+	addLabelIds: string[] = [],
+	removeLabelIds: string[] = [],
+): Promise<void> {
+	const res = await fetch(`${GMAIL_API}/messages/${messageId}/modify`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ addLabelIds, removeLabelIds }),
+	});
+
+	if (!res.ok) {
+		throw new Error(`Gmail modify failed: ${await res.text()}`);
+	}
+}
+
+export async function trashMessage(accessToken: string, messageId: string): Promise<void> {
+	const res = await fetch(`${GMAIL_API}/messages/${messageId}/trash`, {
+		method: "POST",
+		headers: { Authorization: `Bearer ${accessToken}` },
+	});
+
+	if (!res.ok) {
+		throw new Error(`Gmail trash failed: ${await res.text()}`);
+	}
+}
+
+export async function untrashMessage(accessToken: string, messageId: string): Promise<void> {
+	const res = await fetch(`${GMAIL_API}/messages/${messageId}/untrash`, {
+		method: "POST",
+		headers: { Authorization: `Bearer ${accessToken}` },
+	});
+
+	if (!res.ok) {
+		throw new Error(`Gmail untrash failed: ${await res.text()}`);
+	}
+}
+
+export async function permanentDeleteMessage(accessToken: string, messageId: string): Promise<void> {
+	const res = await fetch(`${GMAIL_API}/messages/${messageId}`, {
+		method: "DELETE",
+		headers: { Authorization: `Bearer ${accessToken}` },
+	});
+
+	if (!res.ok) {
+		throw new Error(`Gmail delete failed: ${await res.text()}`);
+	}
+}
+
 function encodeBase64Url(str: string): string {
-	return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+	const bytes = new TextEncoder().encode(str);
+	let binary = "";
+	for (let i = 0; i < bytes.length; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export async function sendMessage(

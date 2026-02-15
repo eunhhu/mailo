@@ -8,7 +8,8 @@
     "build": "bash scripts/build.sh",
     "setup-db": "bun run scripts/setup-db.ts",
     "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit && cd frontend && npx tsc --noEmit"
   },
   "dependencies": {
     "elysia": "^1.2.25",

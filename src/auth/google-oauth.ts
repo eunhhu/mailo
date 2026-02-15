@@ -5,12 +5,12 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo";
 
 const SCOPES = [
-	"https://www.googleapis.com/auth/gmail.readonly",
+	"https://www.googleapis.com/auth/gmail.modify",
 	"https://www.googleapis.com/auth/gmail.send",
 	"https://www.googleapis.com/auth/userinfo.email",
 ];
 
-export function getAuthUrl(): string {
+export function getAuthUrl(state: string): string {
 	const params = new URLSearchParams({
 		client_id: config.google.clientId,
 		redirect_uri: config.google.redirectUri,
@@ -18,6 +18,7 @@ export function getAuthUrl(): string {
 		scope: SCOPES.join(" "),
 		access_type: "offline",
 		prompt: "consent",
+		state,
 	});
 	return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }

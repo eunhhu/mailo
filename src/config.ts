@@ -14,8 +14,10 @@ export const config = {
 		clientSecret: required("GOOGLE_CLIENT_SECRET"),
 		redirectUri: required("GOOGLE_REDIRECT_URI"),
 	},
+	mailFrom: process.env.MAIL_FROM || "",
 	sessionSecret: required("SESSION_SECRET"),
 	port: Number(process.env.PORT || "8380"),
 	host: process.env.HOST || "0.0.0.0",
 	baseUrl: required("BASE_URL"),
+	isSecure: (process.env.BASE_URL || "").startsWith("https://"),
 };
