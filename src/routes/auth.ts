@@ -38,7 +38,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 			return { error: "Password verification required" };
 		}
 
-		set.redirect = getAuthUrl();
+		set.status = 302;
+		set.headers["location"] = getAuthUrl();
 	})
 	.get("/callback", async ({ query, cookie, set }) => {
 		const code = query.code;
@@ -64,7 +65,8 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
 		cookie.app_verified.remove();
 
-		set.redirect = config.baseUrl;
+		set.status = 302;
+		set.headers["location"] = config.baseUrl;
 	})
 	.post("/logout", async ({ cookie }) => {
 		const sessionId = cookie.session_id?.value as string | undefined;
