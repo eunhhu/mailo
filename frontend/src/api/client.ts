@@ -1,7 +1,6 @@
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (res.status === 401) {
-    window.location.href = "/login";
     throw new Error("Unauthorized");
   }
   if (!res.ok) {
@@ -17,7 +16,6 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (res.status === 401) {
-    window.location.href = "/login";
     throw new Error("Unauthorized");
   }
   if (!res.ok) {

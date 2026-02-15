@@ -1,12 +1,43 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { exchangeCode, getAuthUrl, getUserInfo } from "../auth/google-oauth";
 import { createSession, deleteSession, getSession, saveTokens } from "../auth/token-manager";
 import { config } from "../config";
 
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+const APP_COOKIE_MAX_AGE = 30 * 60; // 비밀번호 확인 후 30분 내 OAuth 진행
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
-	.get("/login", ({ set }) => {
+	.post(
+		"/verify-password",
+		({ body, cookie, set }) => {
+			if (body.password !== config.appPassword) {
+				set.status = 403;
+				return { error: "Invalid password" };
+			}
+
+			cookie.app_verified.set({
+				value: "true",
+				httpOnly: true,
+				secure: true,
+				sameSite: "lax",
+				path: "/",
+				maxAge: APP_COOKIE_MAX_AGE,
+			});
+
+			return { success: true };
+		},
+		{
+			body: t.Object({
+				password: t.String(),
+			}),
+		},
+	)
+	.get("/login", ({ cookie, set }) => {
+		if (cookie.app_verified?.value !== "true") {
+			set.status = 403;
+			return { error: "Password verification required" };
+		}
+
 		set.redirect = getAuthUrl();
 	})
 	.get("/callback", async ({ query, cookie, set }) => {
@@ -31,9 +62,11 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 			maxAge: COOKIE_MAX_AGE,
 		});
 
+		cookie.app_verified.remove();
+
 		set.redirect = config.baseUrl;
 	})
-	.post("/logout", async ({ cookie, set }) => {
+	.post("/logout", async ({ cookie }) => {
 		const sessionId = cookie.session_id?.value as string | undefined;
 		if (sessionId) {
 			await deleteSession(sessionId);
@@ -41,7 +74,6 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 
 		cookie.session_id.remove();
 
-		set.status = 200;
 		return { success: true };
 	})
 	.get("/me", async ({ cookie, set }) => {

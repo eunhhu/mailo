@@ -8,6 +8,7 @@ function required(key: string): string {
 
 export const config = {
 	databaseUrl: required("DATABASE_URL"),
+	appPassword: required("APP_PASSWORD"),
 	google: {
 		clientId: required("GOOGLE_CLIENT_ID"),
 		clientSecret: required("GOOGLE_CLIENT_SECRET"),
