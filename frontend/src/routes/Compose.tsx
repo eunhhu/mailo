@@ -1,5 +1,6 @@
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { useNavigate, useSearchParams } from "@solidjs/router";
+import { Motion, Presence } from "@motionone/solid";
 import { sendEmail } from "../stores/emails";
 
 export default function Compose() {
@@ -14,8 +15,7 @@ export default function Compose() {
   const [sending, setSending] = createSignal(false);
   const [error, setError] = createSignal("");
 
-  async function handleSend(e: Event) {
-    e.preventDefault();
+  async function handleSend() {
     if (!to() || !subject()) {
       setError("수신자와 제목을 입력해주세요.");
       return;
@@ -26,62 +26,82 @@ export default function Compose() {
     try {
       await sendEmail({ to: to(), subject: subject(), body: body() });
       navigate("/");
-    } catch (err) {
-      setError("메일 전송에 실패했습니다. 다시 시도해주세요.");
+    } catch {
+      setError("메일 전송에 실패했습니다.");
     } finally {
       setSending(false);
     }
   }
 
   return (
-    <div class="compose-page">
-      <header class="compose-header">
-        <button class="back-btn" onClick={() => navigate("/")}>
-          ← 취소
+    <div class="app-layout">
+      <header class="detail-header">
+        <button class="icon-btn" onClick={() => navigate("/")} title="취소">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h2>새 메일</h2>
+        <div class="header-spacer" />
+        <span style="font-size:0.95rem;font-weight:500">새 메일</span>
+        <div class="header-spacer" />
+        <div style="width:40px" />
       </header>
 
-      <form class="compose-form" onSubmit={handleSend}>
-        <div class="form-field">
-          <label for="to">받는 사람</label>
+      <Motion.div
+        class="compose-content"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div class="compose-field">
+          <span class="compose-label">받는이</span>
           <input
-            id="to"
+            class="compose-input"
             type="email"
-            placeholder="example@gmail.com"
+            placeholder="email@example.com"
             value={to()}
             onInput={(e) => setTo(e.currentTarget.value)}
-            required
+            autofocus={!paramTo}
           />
         </div>
-        <div class="form-field">
-          <label for="subject">제목</label>
+        <div class="compose-field">
+          <span class="compose-label">제목</span>
           <input
-            id="subject"
+            class="compose-input"
             type="text"
-            placeholder="메일 제목"
+            placeholder="제목을 입력하세요"
             value={subject()}
             onInput={(e) => setSubject(e.currentTarget.value)}
-            required
           />
         </div>
-        <div class="form-field">
-          <label for="body">내용</label>
-          <textarea
-            id="body"
-            placeholder="메일 내용을 입력하세요..."
-            value={body()}
-            onInput={(e) => setBody(e.currentTarget.value)}
-            rows={15}
-          />
-        </div>
+        <textarea
+          class="compose-textarea"
+          placeholder="내용을 입력하세요..."
+          value={body()}
+          onInput={(e) => setBody(e.currentTarget.value)}
+        />
+      </Motion.div>
 
-        {error() && <div class="error-msg">{error()}</div>}
+      <Presence>
+        <Show when={error()}>
+          <Motion.div
+            class="error-msg"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {error()}
+          </Motion.div>
+        </Show>
+      </Presence>
 
-        <button type="submit" class="send-btn" disabled={sending()}>
-          {sending() ? "전송 중..." : "보내기"}
+      <div class="compose-footer">
+        <button class="send-btn" onClick={handleSend} disabled={sending()}>
+          <Show when={!sending()} fallback={<div class="spinner" style="width:16px;height:16px;border-color:rgba(255,255,255,0.3);border-top-color:#fff" />}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9Z"/></svg>
+            보내기
+          </Show>
         </button>
-      </form>
+      </div>
     </div>
   );
 }

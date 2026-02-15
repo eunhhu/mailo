@@ -27,7 +27,7 @@ export default function App() {
 
   function AuthGuard(props: { children: any }) {
     return (
-      <Show when={!loading()} fallback={<div class="loading">로딩 중...</div>}>
+      <Show when={!loading()} fallback={<div class="loading-screen"><div class="spinner" /></div>}>
         <Show when={user()} fallback={<Navigate href="/login" />}>
           {props.children}
         </Show>
