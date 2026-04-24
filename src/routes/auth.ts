@@ -1,9 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { Elysia, t } from "elysia";
-import { randomUUID } from "crypto";
 import { exchangeCode, getAuthUrl, getUserInfo } from "../auth/google-oauth";
+import { createRateLimiter } from "../auth/rate-limiter";
 import { createSession, deleteSession, getSession, saveTokens } from "../auth/token-manager";
 import { config } from "../config";
-import { createRateLimiter } from "../auth/rate-limiter";
 
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 const passwordLimiter = createRateLimiter(5, 60_000);
@@ -13,9 +13,10 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 	.post(
 		"/verify-password",
 		({ body, cookie, set, request }) => {
-			const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-				|| request.headers.get("x-real-ip")
-				|| "unknown";
+			const ip =
+				request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+				request.headers.get("x-real-ip") ||
+				"unknown";
 			if (!passwordLimiter(ip)) {
 				set.status = 429;
 				return { error: "Too many attempts. Try again later." };
@@ -60,7 +61,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 		});
 
 		set.status = 302;
-		set.headers["location"] = getAuthUrl(state);
+		set.headers.location = getAuthUrl(state);
 	})
 	.get("/callback", async ({ query, cookie, set }) => {
 		const code = query.code;
@@ -95,7 +96,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
 		cookie.app_verified.remove();
 
 		set.status = 302;
-		set.headers["location"] = config.baseUrl;
+		set.headers.location = config.baseUrl;
 	})
 	.post("/logout", async ({ cookie }) => {
 		const sessionId = cookie.session_id?.value as string | undefined;

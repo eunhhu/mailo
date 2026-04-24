@@ -195,7 +195,10 @@ export async function untrashMessage(accessToken: string, messageId: string): Pr
 	}
 }
 
-export async function permanentDeleteMessage(accessToken: string, messageId: string): Promise<void> {
+export async function permanentDeleteMessage(
+	accessToken: string,
+	messageId: string,
+): Promise<void> {
 	const res = await fetch(`${GMAIL_API}/messages/${messageId}`, {
 		method: "DELETE",
 		headers: { Authorization: `Bearer ${accessToken}` },

@@ -1,24 +1,36 @@
 {
-  "name": "mailo",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bash scripts/build.sh",
-    "setup-db": "bun run scripts/setup-db.ts",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "typecheck": "tsc --noEmit && cd frontend && npx tsc --noEmit"
-  },
-  "dependencies": {
-    "elysia": "^1.2.25",
-    "@elysiajs/cors": "^1.2.0",
-    "postgres": "^3.4.5"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
-    "typescript": "^5.7.0",
-    "@types/bun": "^1.2.0"
-  }
+	"name": "mailo",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Mailo — a single-user Gmail webmail client (Bun + Elysia + SolidJS + PostgreSQL).",
+	"type": "module",
+	"author": "eunhhu",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/eunhhu/mailo.git"
+	},
+	"bugs": {
+		"url": "https://github.com/eunhhu/mailo/issues"
+	},
+	"homepage": "https://github.com/eunhhu/mailo#readme",
+	"keywords": ["gmail", "webmail", "oauth2", "bun", "elysia", "solidjs", "postgres"],
+	"scripts": {
+		"dev": "bun run --watch src/index.ts",
+		"build": "bash scripts/build.sh",
+		"setup-db": "bun run scripts/setup-db.ts",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"typecheck": "tsc --noEmit && cd frontend && npx tsc --noEmit"
+	},
+	"dependencies": {
+		"elysia": "^1.2.25",
+		"@elysiajs/cors": "^1.2.0",
+		"postgres": "^3.4.5"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.0",
+		"typescript": "^5.7.0",
+		"@types/bun": "^1.2.0"
+	}
 }

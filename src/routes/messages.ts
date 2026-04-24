@@ -1,8 +1,16 @@
 import { Elysia, t } from "elysia";
-import { config } from "../config";
 import { authMiddleware } from "../auth/middleware";
 import { createRateLimiter } from "../auth/rate-limiter";
-import { getMessage, listMessages, sendMessage, modifyMessage, trashMessage, untrashMessage, permanentDeleteMessage } from "../gmail/client";
+import { config } from "../config";
+import {
+	getMessage,
+	listMessages,
+	modifyMessage,
+	permanentDeleteMessage,
+	sendMessage,
+	trashMessage,
+	untrashMessage,
+} from "../gmail/client";
 
 const apiLimiter = createRateLimiter(60, 60_000);
 
@@ -30,13 +38,7 @@ export const messageRoutes = new Elysia({ prefix: "/api/messages" })
 		"/send",
 		async ({ user, body }) => {
 			const from = config.mailFrom || user.email;
-			const result = await sendMessage(
-				user.accessToken,
-				from,
-				body.to,
-				body.subject,
-				body.body,
-			);
+			const result = await sendMessage(user.accessToken, from, body.to, body.subject, body.body);
 			return { success: true, ...result };
 		},
 		{
